@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Workout Tracker</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Workout">
+<meta name="theme-color" content="#14161A">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Oswald:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  html, body {
+    margin: 0; padding: 0; background: #0B0C0E; min-height: 100vh;
+    display: flex; align-items: flex-start; justify-content: center;
+  }
+  body { padding: 24px 12px; box-sizing: border-box; width: 100%; }
+  @media (max-width: 480px) { body { padding: 12px 6px; } }
+</style>
+</head>
+<body>
+<style>
+  #wt-root {
+    --bg: #14161A;
+    --surface: #1D2025;
+    --surface-2: #262A31;
+    --line: #33383F;
+    --text: #ECEDEE;
+    --muted: #8B9299;
+    --chalk: #D3F26A;
+    --chalk-dim: #8A9A4E;
+    --steel: #6E8AA8;
+    --danger: #E2604F;
+    font-family: 'IBM Plex Sans', -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    border-radius: 16px;
+    padding: 0;
+    max-width: 720px;
+    margin: 0 auto;
+    overflow: hidden;
+  }
+  #wt-root * { box-sizing: border-box; }
+  #wt-root .num, #wt-root input, #wt-root .weight-val {
+    font-family: 'IBM Plex Mono', 'Courier New', monospace;
+  }
+  #wt-root .head {
+    padding: 24px 24px 18px;
+    border-bottom: 1px solid var(--line);
+    background: linear-gradient(180deg, #191C21 0%, #14161A 100%);
+  }
+  #wt-root .eyebrow {
+    color: var(--chalk);
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+  #wt-root h1 {
+    font-family: 'Oswald', 'Arial Narrow', sans-serif;
+    font-size: 28px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    margin: 0 0 4px;
+    text-transform: uppercase;
+  }
+  #wt-root .sub { color: var(--muted); font-size: 13px; }
+  #wt-root .tabs {
+    display: flex;
+    padding: 0 24px;
+    gap: 4px;
+    background: var(--bg);
+    border-bottom: 1px solid var(--line);
+    overflow-x: auto;
+  }
+  #wt-root .tab {
+    padding: 14px 14px 12px;
+    font-family: 'Oswald', sans-serif;
+    font-size: 14px;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: var(--muted);
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    white-space: nowrap;
+    position: relative;
+  }
+  #wt-root .tab.active { color: var(--text); border-bottom-color: var(--chalk); }
+  #wt-root .tab .dot {
+    display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+    background: var(--chalk); margin-left: 6px; transform: translateY(-1px);
+  }
+  #wt-root .body { padding: 20px 24px 28px; }
+  #wt-root .day-banner {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-bottom: 16px;
+  }
+  #wt-root .day-banner h2 {
+    font-family: 'Oswald', sans-serif; font-size: 15px; font-weight: 500;
+    color: var(--steel); text-transform: uppercase; letter-spacing: 0.06em; margin: 0;
+  }
+  #wt-root .last-done { color: var(--muted); font-size: 12px; }
+  #wt-root .card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 16px 16px 14px;
+    margin-bottom: 12px;
+  }
+  #wt-root .card-top {
+    display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;
+  }
+  #wt-root .ex-name { font-size: 15.5px; font-weight: 600; }
+  #wt-root .ex-target { color: var(--muted); font-size: 12px; margin-top: 2px; }
+  #wt-root .watch-form {
+    display: inline-flex; align-items: center; gap: 5px; margin-top: 6px;
+    font-size: 11.5px; color: var(--steel); text-decoration: none; font-weight: 600;
+  }
+  #wt-root .watch-form:hover { color: var(--chalk); }
+  #wt-root .watch-form svg { flex-shrink: 0; }
+  #wt-root .suggest {
+    text-align: right; flex-shrink: 0; margin-left: 12px;
+  }
+  #wt-root .suggest .label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+  #wt-root .suggest .weight-val { font-size: 17px; color: var(--chalk); font-weight: 600; }
+  #wt-root .trend { font-size: 11px; margin-top: 2px; }
+  #wt-root .trend.up { color: var(--chalk); }
+  #wt-root .trend.hold { color: var(--muted); }
+  #wt-root .trend.down { color: var(--danger); }
+  #wt-root .sets-grid {
+    display: grid; gap: 6px; margin-top: 8px;
+  }
+  #wt-root .set-row {
+    display: grid; grid-template-columns: 28px 1fr 1fr; gap: 8px; align-items: center;
+  }
+  #wt-root .set-idx { color: var(--muted); font-size: 12px; text-align: center; }
+  #wt-root .input-wrap {
+    display: flex; align-items: center; background: var(--surface-2);
+    border: 1px solid var(--line); border-radius: 6px; overflow: hidden;
+  }
+  #wt-root .input-wrap span {
+    padding: 8px 8px; font-size: 11px; color: var(--muted); border-right: 1px solid var(--line);
+  }
+  #wt-root input[type=number] {
+    background: transparent; border: none; color: var(--text); padding: 8px 10px;
+    width: 100%; font-size: 14px; outline: none;
+  }
+  #wt-root input[type=number]::-webkit-inner-spin-button { opacity: 0.4; }
+  #wt-root .save-bar {
+    position: sticky; bottom: 0; margin-top: 18px;
+    display: flex; gap: 10px; align-items: center;
+  }
+  #wt-root button.primary {
+    background: var(--chalk); color: #14161A; border: none;
+    font-family: 'Oswald', sans-serif; font-weight: 600; letter-spacing: 0.03em;
+    text-transform: uppercase; font-size: 13.5px;
+    padding: 12px 20px; border-radius: 8px; cursor: pointer; flex: 1;
+  }
+  #wt-root button.primary:active { transform: scale(0.98); }
+  #wt-root button.ghost {
+    background: transparent; border: 1px solid var(--line); color: var(--muted);
+    padding: 12px 14px; border-radius: 8px; cursor: pointer; font-size: 13px;
+  }
+  #wt-root .toast {
+    background: var(--surface-2); border: 1px solid var(--chalk-dim); color: var(--chalk);
+    padding: 10px 14px; border-radius: 8px; font-size: 13px; margin-top: 12px;
+    display: none;
+  }
+  #wt-root .toast.show { display: block; }
+  #wt-root .hist-strip {
+    display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap;
+  }
+  #wt-root .hist-chip {
+    font-size: 10.5px; color: var(--muted); background: var(--surface-2);
+    border: 1px solid var(--line); border-radius: 5px; padding: 3px 7px;
+  }
+  #wt-root .setup-note {
+    font-size: 12px; color: var(--muted); background: var(--surface);
+    border: 1px dashed var(--line); border-radius: 8px; padding: 12px 14px; margin-bottom: 16px;
+    line-height: 1.5;
+  }
+  #wt-root .setup-note textarea {
+    width: 100%; background: var(--surface-2); border: 1px solid var(--line); color: var(--text);
+    border-radius: 6px; padding: 8px; font-size: 12px; margin-top: 6px; resize: vertical;
+    min-height: 40px; font-family: inherit;
+  }
+  #wt-root .loading { padding: 40px; text-align: center; color: var(--muted); font-size: 13px; }
+  #wt-root .warmup-block {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
+    padding: 16px 16px 14px; margin-bottom: 12px;
+  }
+  #wt-root .warmup-block h3 {
+    font-family: 'Oswald', sans-serif; font-size: 14px; text-transform: uppercase;
+    letter-spacing: 0.04em; color: var(--chalk); margin: 0 0 8px;
+  }
+  #wt-root .warmup-block ul { margin: 0; padding-left: 18px; }
+  #wt-root .warmup-block li { font-size: 13.5px; line-height: 1.7; }
+  #wt-root .warmup-block .time-tag {
+    color: var(--steel); font-size: 11.5px; font-weight: 600; margin-left: 6px;
+  }
+  #wt-root .warmup-total {
+    text-align: right; font-size: 12px; color: var(--muted); margin-top: 4px;
+  }
+</style>
+
+<div id="wt-root">
+  <div class="loading" id="wt-loading">Loading your training log…</div>
+</div>
+
+<script>
+// --- Standalone localStorage-backed storage shim (mirrors Claude artifact storage API) ---
+window.storage = {
+  get: async (key, shared) => {
+    const raw = localStorage.getItem(key);
+    if (raw === null) throw new Error('Key not found: ' + key);
+    return { key, value: raw, shared: !!shared };
+  },
+  set: async (key, value, shared) => {
+    localStorage.setItem(key, value);
+    return { key, value, shared: !!shared };
+  },
+  delete: async (key, shared) => {
+    localStorage.removeItem(key);
+    return { key, deleted: true, shared: !!shared };
+  },
+  list: async (prefix, shared) => {
+    const keys = Object.keys(localStorage).filter(k => !prefix || k.startsWith(prefix));
+    return { keys, prefix, shared: !!shared };
+  }
+};
+
+(function() {
+  const ROOT = document.getElementById('wt-root');
+
+  // ---- Program definition ----
+  // increment: kg to add to suggested weight when lifter tops out the rep range
+  const PROGRAM = {
+    'Upper A': [
+      { id: 'u1', name: 'Flat Dumbbell Bench Press', sets: 4, repMin: 6, repMax: 8, increment: 2, video: 'J-gWN5hYwRU' },
+      { id: 'u2', name: 'Standing DB Shoulder Press', sets: 3, repMin: 8, repMax: 10, increment: 2, video: 'OOe_HrNnQWw' },
+      { id: 'u3', name: 'One-Arm DB Row (per side)', sets: 4, repMin: 8, repMax: 10, increment: 2, video: 'gfUg6qWohTk' },
+      { id: 'u4', name: 'Incline DB Press', sets: 3, repMin: 10, repMax: 12, increment: 2, video: 'sK4Rvug6ufo' },
+      { id: 'u5', name: 'Lateral Raise', sets: 3, repMin: 12, repMax: 15, increment: 1, video: 'Y29xKcze8Ik' },
+      { id: 'u6', name: 'Standing Overhead Triceps Extension', sets: 3, repMin: 10, repMax: 12, increment: 1, video: 's-FoAbMyHTc' },
+      { id: 'u7', name: 'Face Pull / Rear Delt Fly', sets: 2, repMin: 15, repMax: 20, increment: 1, video: 'wnPX6Fwe-Fg' },
+    ],
+    'Lower A': [
+      { id: 'l1', name: 'Goblet / DB Squat', sets: 4, repMin: 6, repMax: 8, increment: 2.5, video: 'BR4tlEE_A98' },
+      { id: 'l2', name: 'Romanian Deadlift (DB)', sets: 3, repMin: 8, repMax: 10, increment: 2.5, video: 'aa57T45iFSE' },
+      { id: 'l3', name: 'Reverse Lunge (Dumbbell)', sets: 3, repMin: 10, repMax: 10, increment: 1, video: 'Q2k3kYbtOcI' },
+      { id: 'l4', name: 'Leg Extension (machine)', sets: 3, repMin: 12, repMax: 15, increment: 2, video: 'o90ocSBDJis' },
+      { id: 'l5', name: 'Standing Calf Raise', sets: 4, repMin: 12, repMax: 15, increment: 2, video: '97NbelB5yvQ' },
+      { id: 'l6', name: 'Plank (seconds/side)', sets: 3, repMin: 30, repMax: 45, increment: 0, video: 'mwlp75MS6Rg' },
+    ],
+    'Upper B': [
+      { id: 'v1', name: 'Pull-Up / Lat Pulldown', sets: 4, repMin: 6, repMax: 10, increment: 2, video: 'Z_3xHwuO8Tk' },
+      { id: 'v2', name: 'Machine / DB Chest Press', sets: 3, repMin: 8, repMax: 10, increment: 2, video: 'pLofEAcfsO8' },
+      { id: 'v3', name: 'Seated Cable / DB Row', sets: 4, repMin: 8, repMax: 10, increment: 2, video: 'EU7bOadUsNI' },
+      { id: 'v4', name: 'Standing Arnold Press', sets: 3, repMin: 10, repMax: 12, increment: 2, video: 'ZsVxV2dV5YU' },
+      { id: 'v5', name: 'Bicep Curl', sets: 3, repMin: 10, repMax: 12, increment: 1, video: 'ykJmrZ5v0Oo' },
+      { id: 'v6', name: 'Rear Delt Fly', sets: 3, repMin: 12, repMax: 15, increment: 1, video: 'LsT-bR_zxLo' },
+      { id: 'v7', name: 'Hammer Curl', sets: 2, repMin: 12, repMax: 12, increment: 1, video: 'Iz1kGNIfS3Y' },
+    ],
+    'Lower B': [
+      { id: 'w1', name: 'Deadlift (DB / trap bar)', sets: 4, repMin: 5, repMax: 6, increment: 2.5, video: 'Ipi8_vz8_z0' },
+      { id: 'w2', name: 'Front / Goblet Squat', sets: 3, repMin: 8, repMax: 10, increment: 2.5, video: 'BR4tlEE_A98' },
+      { id: 'w3', name: 'Lateral Lunge (Dumbbell)', sets: 3, repMin: 8, repMax: 8, increment: 1, video: 'R8jArZG2J6Q' },
+      { id: 'w4', name: 'Leg Curl (machine)', sets: 3, repMin: 10, repMax: 12, increment: 2, video: 'hqI59xXChFk' },
+      { id: 'w5', name: 'Hip Thrust', sets: 3, repMin: 10, repMax: 12, increment: 2.5, video: 'Zp26q4BY5HE' },
+      { id: 'w6', name: 'Standing Calf Raise', sets: 4, repMin: 12, repMax: 15, increment: 2, video: '97NbelB5yvQ' },
+      { id: 'w7', name: 'Hanging Knee Raise', sets: 3, repMin: 12, repMax: 15, increment: 0, video: '0BmrlKCfTPU' },
+    ],
+  };
+  const DAY_ORDER = ['Upper A', 'Lower A', 'Upper B', 'Lower B'];
+
+  let history = { sessions: [] };
+  let profile = { weightKg: 64, heightIn: "5'10\"", goal: 'Build muscle', experience: 'Some experience (6mo-2yr)', equipmentNotes: '' };
+  let activeDay = DAY_ORDER[0];
+  let draft = {}; // exId -> [{weight, reps}, ...]
+
+  async function loadAll() {
+    try {
+      const h = await window.storage.get('history', false);
+      if (h && h.value) history = JSON.parse(h.value);
+    } catch (e) { /* no history yet */ }
+    try {
+      const p = await window.storage.get('profile', false);
+      if (p && p.value) profile = JSON.parse(p.value);
+    } catch (e) { /* defaults stand */ }
+
+    activeDay = suggestNextDay();
+    render();
+  }
+
+  function suggestNextDay() {
+    if (!history.sessions.length) return DAY_ORDER[0];
+    const last = history.sessions[history.sessions.length - 1];
+    const idx = DAY_ORDER.indexOf(last.day);
+    return DAY_ORDER[(idx + 1) % DAY_ORDER.length];
+  }
+
+  function lastPerformance(exId) {
+    for (let i = history.sessions.length - 1; i >= 0; i--) {
+      const s = history.sessions[i];
+      const ex = s.exercises.find(e => e.id === exId);
+      if (ex) return { session: s, ex };
+    }
+    return null;
+  }
+
+  function recentHistory(exId, n) {
+    const out = [];
+    for (let i = history.sessions.length - 1; i >= 0 && out.length < n; i--) {
+      const s = history.sessions[i];
+      const ex = s.exercises.find(e => e.id === exId);
+      if (ex) out.push({ date: s.date, ex });
+    }
+    return out.reverse();
+  }
+
+  function suggestion(exDef) {
+    const last = lastPerformance(exDef.id);
+    if (!last) {
+      return { text: 'Pick a starting weight', trend: 'hold', weight: null };
+    }
+    const sets = last.ex.sets;
+    const allTop = sets.every(s => s.reps >= exDef.repMax);
+    const allMetMin = sets.every(s => s.reps >= exDef.repMin);
+    const lastWeight = Math.max(...sets.map(s => s.weight));
+
+    if (allTop) {
+      return { text: `${(lastWeight + exDef.increment).toFixed(1)} kg`, trend: 'up', weight: lastWeight + exDef.increment, note: 'topped range last time — go up' };
+    } else if (allMetMin) {
+      return { text: `${lastWeight.toFixed(1)} kg`, trend: 'hold', weight: lastWeight, note: 'push for more reps at same weight' };
+    } else {
+      const dropped = Math.max(exDef.increment > 0 ? lastWeight - exDef.increment : lastWeight, 0);
+      return { text: `${dropped.toFixed(1)} kg`, trend: 'down', weight: dropped, note: 'missed reps — hold or ease back' };
+    }
+  }
+
+  function fmtDate(d) {
+    const dt = new Date(d);
+    return dt.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  }
+
+  function render() {
+    ROOT.innerHTML = `
+      <div class="head">
+        <div class="eyebrow">4-Day Upper / Lower · Muscle Gain</div>
+        <h1>Today's Session</h1>
+        <div class="sub">${profile.weightKg}kg · ${profile.heightIn} · ${profile.experience}</div>
+      </div>
+      <div class="tabs">
+        ${DAY_ORDER.map(d => `
+          <div class="tab ${d === activeDay ? 'active' : ''}" data-day="${d}">
+            ${d}${d === suggestNextDay() && d !== activeDay ? '<span class="dot"></span>' : ''}
+          </div>
+        `).join('')}
+        <div class="tab ${activeDay === 'Warm-up' ? 'active' : ''}" data-day="Warm-up">Warm-up</div>
+      </div>
+      <div class="body">
+        ${activeDay === 'Warm-up' ? renderWarmup() : renderDay()}
+      </div>
+    `;
+
+    ROOT.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => {
+      activeDay = t.dataset.day;
+      draft = {};
+      render();
+    }));
+    if (activeDay !== 'Warm-up') {
+      ROOT.querySelectorAll('input[data-ex]').forEach(inp => inp.addEventListener('input', onInputChange));
+      document.getElementById('wt-save').addEventListener('click', saveSession);
+      document.getElementById('wt-reset').addEventListener('click', () => { draft = {}; render(); });
+      const equipEl = document.getElementById('wt-equip');
+      equipEl.addEventListener('blur', saveProfile);
+    }
+  }
+
+  function renderWarmup() {
+    return `
+      <div class="warmup-block">
+        <h3>1. Light Cardio</h3>
+        <ul>
+          <li>Bike, incline treadmill walk, or rower — easy pace, just enough to raise heart rate<span class="time-tag">5 min</span></li>
+        </ul>
+      </div>
+      <div class="warmup-block">
+        <h3>2. Dynamic Mobility (back-focused)</h3>
+        <ul>
+          <li>Cat-cow — 8-10 slow reps<span class="time-tag">~1 min</span></li>
+          <li>Bird dog — 6-8 reps per side<span class="time-tag">~1.5 min</span></li>
+          <li>Hip circles or 90/90 hip switches — 5-6 per side<span class="time-tag">~1 min</span></li>
+          <li>Leg swings (front-back and side-side) — 10 per leg<span class="time-tag">~1 min</span></li>
+        </ul>
+      </div>
+      <div class="warmup-block">
+        <h3>3. Ramp-Up Sets</h3>
+        <ul>
+          <li>On your first main lift of the day, before working weight: 1 set at ~50% weight × 8-10 reps</li>
+          <li>Then 1 set at ~75% weight × 4-5 reps</li>
+          <li>Then start your logged working sets<span class="time-tag">~3-4 min</span></li>
+        </ul>
+      </div>
+      <div class="warmup-total">Total: ~10-12 min — still leaves room for a 1-hour session</div>
+    `;
+  }
+
+  function renderDay() {
+    const exercises = PROGRAM[activeDay];
+    const lastSession = history.sessions.length ? history.sessions[history.sessions.length - 1] : null;
+    return `
+        <div class="setup-note">
+          <strong style="color:var(--text)">Lower back note</strong> — no seated overhead pressing (all swapped to standing). Ease into the reverse lunge, lateral lunge, RDL, and deadlift with lighter weight first and stop any set that aggravates your back. Rest ~60-90s between upper sets and ~90-150s between heavy lower sets to land near an hour per session.
+          <br><br>
+          <strong style="color:var(--text)">Equipment notes</strong> — jot down the machines you've got so exercise picks stay accurate. Saved automatically.
+          <textarea id="wt-equip" placeholder="e.g. cable tower with lat pulldown + row attachment, leg press, no barbell rack...">${profile.equipmentNotes || ''}</textarea>
+        </div>
+        <div class="day-banner">
+          <h2>${activeDay}</h2>
+          <div class="last-done">${lastSession ? `Last session: ${lastSession.day} · ${fmtDate(lastSession.date)}` : 'No sessions logged yet'}</div>
+        </div>
+        ${exercises.map(ex => renderCard(ex)).join('')}
+        <div class="save-bar">
+          <button class="ghost" id="wt-reset">Clear inputs</button>
+          <button class="primary" id="wt-save">Log this session</button>
+        </div>
+        <div class="toast" id="wt-toast"></div>
+    `;
+  }
+
+  function renderCard(ex) {
+    const sug = suggestion(ex);
+    const hist = recentHistory(ex.id, 3);
+    const isTime = ex.name.toLowerCase().includes('plank');
+    const unit = isTime ? 'sec' : 'reps';
+
+    let rowsHtml = '';
+    for (let i = 0; i < ex.sets; i++) {
+      const savedRow = (draft[ex.id] && draft[ex.id][i]) || {};
+      const wVal = savedRow.weight !== undefined ? savedRow.weight : (sug.weight !== null ? sug.weight : '');
+      const rVal = savedRow.reps !== undefined ? savedRow.reps : '';
+      rowsHtml += `
+        <div class="set-row">
+          <div class="set-idx">${i + 1}</div>
+          <div class="input-wrap">
+            <span>kg</span>
+            <input type="number" step="0.5" min="0" placeholder="wt" value="${wVal}" data-ex="${ex.id}" data-set="${i}" data-field="weight">
+          </div>
+          <div class="input-wrap">
+            <span>${unit}</span>
+            <input type="number" step="1" min="0" placeholder="${unit}" value="${rVal}" data-ex="${ex.id}" data-set="${i}" data-field="reps">
+          </div>
+        </div>`;
+    }
+
+    return `
+      <div class="card">
+        <div class="card-top">
+          <div>
+            <div class="ex-name">${ex.name}</div>
+            <div class="ex-target">${ex.sets} sets × ${ex.repMin === ex.repMax ? ex.repMin : ex.repMin + '–' + ex.repMax} ${unit}</div>
+            ${ex.video ? `<a class="watch-form" href="https://www.youtube.com/watch?v=${ex.video}" target="_blank" rel="noopener noreferrer">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M8 5v14l11-7L8 5z" fill="currentColor"/></svg>
+              Watch form
+            </a>` : ''}
+          </div>
+          <div class="suggest">
+            <div class="label">Suggested</div>
+            <div class="weight-val">${sug.weight !== null ? sug.weight.toFixed(1) + ' kg' : '—'}</div>
+            ${sug.note ? `<div class="trend ${sug.trend}">${sug.note}</div>` : ''}
+          </div>
+        </div>
+        <div class="sets-grid">${rowsHtml}</div>
+        ${hist.length ? `<div class="hist-strip">${hist.map(h => `<span class="hist-chip">${fmtDate(h.date)}: ${h.ex.sets.map(s => s.weight + '×' + s.reps).join(', ')}</span>`).join('')}</div>` : ''}
+      </div>
+    `;
+  }
+
+  function onInputChange(e) {
+    const exId = e.target.dataset.ex;
+    const setIdx = parseInt(e.target.dataset.set, 10);
+    const field = e.target.dataset.field;
+    const val = parseFloat(e.target.value);
+    if (!draft[exId]) draft[exId] = [];
+    if (!draft[exId][setIdx]) draft[exId][setIdx] = {};
+    draft[exId][setIdx][field] = isNaN(val) ? undefined : val;
+  }
+
+  async function saveProfile() {
+    profile.equipmentNotes = document.getElementById('wt-equip').value;
+    try {
+      await window.storage.set('profile', JSON.stringify(profile), false);
+    } catch (e) { console.error('profile save failed', e); }
+  }
+
+  async function saveSession() {
+    const exercises = PROGRAM[activeDay];
+    const loggedExercises = [];
+
+    exercises.forEach(ex => {
+      const rows = draft[ex.id];
+      if (!rows) return;
+      const validSets = rows.filter(r => r && r.weight !== undefined && r.reps !== undefined);
+      if (validSets.length) {
+        loggedExercises.push({ id: ex.id, name: ex.name, sets: validSets });
+      }
+    });
+
+    const toastEl = document.getElementById('wt-toast');
+    if (!loggedExercises.length) {
+      toastEl.textContent = 'Log at least one set before saving.';
+      toastEl.classList.add('show');
+      return;
+    }
+
+    const session = { date: new Date().toISOString(), day: activeDay, exercises: loggedExercises };
+    history.sessions.push(session);
+
+    try {
+      const result = await window.storage.set('history', JSON.stringify(history), false);
+      if (!result) throw new Error('no result');
+      toastEl.textContent = `Saved ${activeDay} — ${loggedExercises.length} exercise(s) logged. Nice work.`;
+      toastEl.classList.add('show');
+      draft = {};
+      setTimeout(() => { activeDay = suggestNextDay(); render(); }, 900);
+    } catch (e) {
+      toastEl.textContent = 'Something went wrong saving — try again.';
+      toastEl.classList.add('show');
+      console.error(e);
+    }
+  }
+
+  loadAll();
+})();
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch((e) => console.warn('SW registration failed', e));
+  });
+}
+</script>
+
+</body>
+</html>
