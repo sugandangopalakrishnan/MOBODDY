@@ -106,6 +106,12 @@
     color: var(--steel); text-transform: uppercase; letter-spacing: 0.06em; margin: 0;
   }
   #wt-root .last-done { color: var(--muted); font-size: 12px; }
+  #wt-root .muscle-tags { display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; }
+  #wt-root .muscle-tag {
+    font-size: 11px; color: var(--chalk); background: rgba(211,242,106,0.1);
+    border: 1px solid var(--chalk-dim); border-radius: 20px; padding: 4px 10px;
+    text-transform: uppercase; letter-spacing: 0.03em; font-weight: 600;
+  }
   #wt-root .card {
     background: var(--surface);
     border: 1px solid var(--line);
@@ -240,41 +246,32 @@ window.storage = {
 
   // ---- Program definition ----
   // increment: kg to add to suggested weight when lifter tops out the rep range
+  const DAY_MUSCLES = {
+    'Upper A': ['Chest', 'Back', 'Shoulders'],
+    'Lower A': ['Quads', 'Hamstrings', 'Glutes'],
+    'Upper B': ['Back', 'Shoulders', 'Biceps'],
+    'Lower B': ['Hamstrings', 'Glutes', 'Quads'],
+  };
   const PROGRAM = {
     'Upper A': [
-      { id: 'u1', name: 'Flat Dumbbell Bench Press', sets: 4, repMin: 6, repMax: 8, increment: 2, video: 'J-gWN5hYwRU' },
-      { id: 'u2', name: 'Standing DB Shoulder Press', sets: 3, repMin: 8, repMax: 10, increment: 2, video: 'OOe_HrNnQWw' },
-      { id: 'u3', name: 'One-Arm DB Row (per side)', sets: 4, repMin: 8, repMax: 10, increment: 2, video: 'gfUg6qWohTk' },
-      { id: 'u4', name: 'Incline DB Press', sets: 3, repMin: 10, repMax: 12, increment: 2, video: 'sK4Rvug6ufo' },
-      { id: 'u5', name: 'Lateral Raise', sets: 3, repMin: 12, repMax: 15, increment: 1, video: 'Y29xKcze8Ik' },
-      { id: 'u6', name: 'Standing Overhead Triceps Extension', sets: 3, repMin: 10, repMax: 12, increment: 1, video: 's-FoAbMyHTc' },
-      { id: 'u7', name: 'Face Pull / Rear Delt Fly', sets: 2, repMin: 15, repMax: 20, increment: 1, video: 'wnPX6Fwe-Fg' },
+      { id: 'u1', name: 'Flat Dumbbell Bench Press', sets: 3, repMin: 10, repMax: 10, increment: 2, video: 'J-gWN5hYwRU' },
+      { id: 'u3', name: 'One-Arm DB Row (per side)', sets: 3, repMin: 10, repMax: 10, increment: 2, video: 'gfUg6qWohTk' },
+      { id: 'u2', name: 'Standing DB Shoulder Press', sets: 3, repMin: 10, repMax: 10, increment: 2, video: 'OOe_HrNnQWw' },
     ],
     'Lower A': [
-      { id: 'l1', name: 'Goblet / DB Squat', sets: 4, repMin: 6, repMax: 8, increment: 2.5, video: 'BR4tlEE_A98' },
-      { id: 'l2', name: 'Romanian Deadlift (DB)', sets: 3, repMin: 8, repMax: 10, increment: 2.5, video: 'aa57T45iFSE' },
+      { id: 'l1', name: 'Goblet / DB Squat', sets: 3, repMin: 10, repMax: 10, increment: 2.5, video: 'BR4tlEE_A98' },
+      { id: 'l2', name: 'Romanian Deadlift (DB)', sets: 3, repMin: 10, repMax: 10, increment: 2.5, video: 'aa57T45iFSE' },
       { id: 'l3', name: 'Reverse Lunge (Dumbbell)', sets: 3, repMin: 10, repMax: 10, increment: 1, video: 'Q2k3kYbtOcI' },
-      { id: 'l4', name: 'Leg Extension (machine)', sets: 3, repMin: 12, repMax: 15, increment: 2, video: 'o90ocSBDJis' },
-      { id: 'l5', name: 'Standing Calf Raise', sets: 4, repMin: 12, repMax: 15, increment: 2, video: '97NbelB5yvQ' },
-      { id: 'l6', name: 'Plank (seconds/side)', sets: 3, repMin: 30, repMax: 45, increment: 0, video: 'mwlp75MS6Rg' },
     ],
     'Upper B': [
-      { id: 'v1', name: 'Pull-Up / Lat Pulldown', sets: 4, repMin: 6, repMax: 10, increment: 2, video: 'Z_3xHwuO8Tk' },
-      { id: 'v2', name: 'Machine / DB Chest Press', sets: 3, repMin: 8, repMax: 10, increment: 2, video: 'pLofEAcfsO8' },
-      { id: 'v3', name: 'Seated Cable / DB Row', sets: 4, repMin: 8, repMax: 10, increment: 2, video: 'EU7bOadUsNI' },
-      { id: 'v4', name: 'Standing Arnold Press', sets: 3, repMin: 10, repMax: 12, increment: 2, video: 'ZsVxV2dV5YU' },
-      { id: 'v5', name: 'Bicep Curl', sets: 3, repMin: 10, repMax: 12, increment: 1, video: 'ykJmrZ5v0Oo' },
-      { id: 'v6', name: 'Rear Delt Fly', sets: 3, repMin: 12, repMax: 15, increment: 1, video: 'LsT-bR_zxLo' },
-      { id: 'v7', name: 'Hammer Curl', sets: 2, repMin: 12, repMax: 12, increment: 1, video: 'Iz1kGNIfS3Y' },
+      { id: 'v1', name: 'Pull-Up / Lat Pulldown', sets: 3, repMin: 10, repMax: 10, increment: 2, video: 'Z_3xHwuO8Tk' },
+      { id: 'v4', name: 'Standing Arnold Press', sets: 3, repMin: 10, repMax: 10, increment: 2, video: 'ZsVxV2dV5YU' },
+      { id: 'v5', name: 'Bicep Curl', sets: 3, repMin: 10, repMax: 10, increment: 1, video: 'ykJmrZ5v0Oo' },
     ],
     'Lower B': [
-      { id: 'w1', name: 'Deadlift (DB / trap bar)', sets: 4, repMin: 5, repMax: 6, increment: 2.5, video: 'Ipi8_vz8_z0' },
-      { id: 'w2', name: 'Front / Goblet Squat', sets: 3, repMin: 8, repMax: 10, increment: 2.5, video: 'BR4tlEE_A98' },
-      { id: 'w3', name: 'Lateral Lunge (Dumbbell)', sets: 3, repMin: 8, repMax: 8, increment: 1, video: 'R8jArZG2J6Q' },
-      { id: 'w4', name: 'Leg Curl (machine)', sets: 3, repMin: 10, repMax: 12, increment: 2, video: 'hqI59xXChFk' },
-      { id: 'w5', name: 'Hip Thrust', sets: 3, repMin: 10, repMax: 12, increment: 2.5, video: 'Zp26q4BY5HE' },
-      { id: 'w6', name: 'Standing Calf Raise', sets: 4, repMin: 12, repMax: 15, increment: 2, video: '97NbelB5yvQ' },
-      { id: 'w7', name: 'Hanging Knee Raise', sets: 3, repMin: 12, repMax: 15, increment: 0, video: '0BmrlKCfTPU' },
+      { id: 'w1', name: 'Deadlift (DB / trap bar)', sets: 3, repMin: 10, repMax: 10, increment: 2.5, video: 'Ipi8_vz8_z0' },
+      { id: 'w2', name: 'Front / Goblet Squat', sets: 3, repMin: 10, repMax: 10, increment: 2.5, video: 'BR4tlEE_A98' },
+      { id: 'w3', name: 'Lateral Lunge (Dumbbell)', sets: 3, repMin: 10, repMax: 10, increment: 1, video: 'R8jArZG2J6Q' },
     ],
   };
   const DAY_ORDER = ['Upper A', 'Lower A', 'Upper B', 'Lower B'];
@@ -426,6 +423,7 @@ window.storage = {
           <h2>${activeDay}</h2>
           <div class="last-done">${lastSession ? `Last session: ${lastSession.day} · ${fmtDate(lastSession.date)}` : 'No sessions logged yet'}</div>
         </div>
+        <div class="muscle-tags">${(DAY_MUSCLES[activeDay] || []).map(m => `<span class="muscle-tag">${m}</span>`).join('')}</div>
         ${exercises.map(ex => renderCard(ex)).join('')}
         <div class="save-bar">
           <button class="ghost" id="wt-reset">Clear inputs</button>
