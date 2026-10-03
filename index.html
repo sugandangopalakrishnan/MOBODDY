@@ -70,6 +70,9 @@
     margin: 0 0 4px;
     text-transform: uppercase;
   }
+  #wt-root a { color: var(--steel); }
+  #wt-root p { line-height: 1.6; font-size: 13px; }
+  #wt-root .suggest { max-width: 130px; }
   #wt-root .sub { color: var(--muted); font-size: 13px; }
   #wt-root .tabs {
     display: flex;
@@ -143,7 +146,7 @@
     display: grid; gap: 6px; margin-top: 8px;
   }
   #wt-root .set-row {
-    display: grid; grid-template-columns: 28px 1fr 1fr; gap: 8px; align-items: center;
+    display: grid; grid-template-columns: 28px minmax(0, 1fr) minmax(0, 1fr); gap: 8px; align-items: center;
   }
   #wt-root .set-idx { color: var(--muted); font-size: 12px; text-align: center; }
   #wt-root .input-wrap {
@@ -153,11 +156,10 @@
   #wt-root .input-wrap span {
     padding: 8px 8px; font-size: 11px; color: var(--muted); border-right: 1px solid var(--line);
   }
-  #wt-root input[type=number] {
+  #wt-root input[type=text] {
     background: transparent; border: none; color: var(--text); padding: 8px 10px;
-    width: 100%; font-size: 14px; outline: none;
+    width: 100%; min-width: 0; font-size: 14px; outline-color: var(--chalk);
   }
-  #wt-root input[type=number]::-webkit-inner-spin-button { opacity: 0.4; }
   #wt-root .save-bar {
     position: sticky; bottom: 0; margin-top: 18px;
     display: flex; gap: 10px; align-items: center;
@@ -196,6 +198,7 @@
     border-radius: 6px; padding: 8px; font-size: 12px; margin-top: 6px; resize: vertical;
     min-height: 40px; font-family: inherit;
   }
+  @media (max-width: 480px) { #wt-root .body { padding: 16px 12px 24px; } #wt-root .head { padding: 20px 16px; } #wt-root .tabs { padding: 0 12px; } #wt-root .card-top { flex-wrap: wrap; gap: 8px; } #wt-root .suggest { text-align: left; margin-left: 0; max-width: none; } }
   #wt-root .loading { padding: 40px; text-align: center; color: var(--muted); font-size: 13px; }
   #wt-root .warmup-block {
     background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
@@ -210,6 +213,14 @@
   #wt-root .warmup-block .time-tag {
     color: var(--steel); font-size: 11.5px; font-weight: 600; margin-left: 6px;
   }
+  #wt-root .calendar-head { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:14px; }
+  #wt-root .calendar-head strong { font-size:15px; text-align:center; }
+  #wt-root .calendar-grid { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:6px; }
+  #wt-root .calendar-weekday { text-align:center; font-size:11px; color:var(--muted); padding-bottom:5px; }
+  #wt-root .calendar-day { min-height:38px; display:flex; align-items:center; justify-content:center; border-radius:8px; font-size:13px; border:1px solid transparent; }
+  #wt-root .calendar-day.workout { color:var(--bg); background:var(--chalk); font-weight:700; }
+  #wt-root .calendar-day.today { border-color:var(--steel); }
+  #wt-root .calendar-legend { font-size:12px; color:var(--muted); margin-top:12px; line-height:1.6; }
   #wt-root .warmup-total {
     text-align: right; font-size: 12px; color: var(--muted); margin-top: 4px;
   }
@@ -245,41 +256,269 @@ window.storage = {
   const ROOT = document.getElementById('wt-root');
 
   // ---- Program definition ----
-  // increment: kg to add to suggested weight when lifter tops out the rep range
-  const DAY_MUSCLES = {
-    'Upper A': ['Chest', 'Back', 'Shoulders'],
-    'Lower A': ['Quads', 'Hamstrings', 'Glutes'],
-    'Upper B': ['Back', 'Shoulders', 'Biceps'],
-    'Lower B': ['Hamstrings', 'Glutes', 'Quads'],
-  };
   const PROGRAM = {
-    'Upper A': [
-      { id: 'u1', name: 'Flat Dumbbell Bench Press', sets: 3, repMin: 10, repMax: 10, increment: 2, video: 'J-gWN5hYwRU' },
-      { id: 'u3', name: 'One-Arm DB Row (per side)', sets: 3, repMin: 10, repMax: 10, increment: 2, video: 'gfUg6qWohTk' },
-      { id: 'u2', name: 'Standing DB Shoulder Press', sets: 3, repMin: 10, repMax: 10, increment: 2, video: 'OOe_HrNnQWw' },
-    ],
-    'Lower A': [
-      { id: 'l1', name: 'Goblet / DB Squat', sets: 3, repMin: 10, repMax: 10, increment: 2.5, video: 'BR4tlEE_A98' },
-      { id: 'l2', name: 'Romanian Deadlift (DB)', sets: 3, repMin: 10, repMax: 10, increment: 2.5, video: 'aa57T45iFSE' },
-      { id: 'l3', name: 'Reverse Lunge (Dumbbell)', sets: 3, repMin: 10, repMax: 10, increment: 1, video: 'Q2k3kYbtOcI' },
-    ],
-    'Upper B': [
-      { id: 'v1', name: 'Pull-Up / Lat Pulldown', sets: 3, repMin: 10, repMax: 10, increment: 2, video: 'Z_3xHwuO8Tk' },
-      { id: 'v4', name: 'Standing Arnold Press', sets: 3, repMin: 10, repMax: 10, increment: 2, video: 'ZsVxV2dV5YU' },
-      { id: 'v5', name: 'Bicep Curl', sets: 3, repMin: 10, repMax: 10, increment: 1, video: 'ykJmrZ5v0Oo' },
-    ],
-    'Lower B': [
-      { id: 'w1', name: 'Deadlift (DB / trap bar)', sets: 3, repMin: 10, repMax: 10, increment: 2.5, video: 'Ipi8_vz8_z0' },
-      { id: 'w2', name: 'Front / Goblet Squat', sets: 3, repMin: 10, repMax: 10, increment: 2.5, video: 'BR4tlEE_A98' },
-      { id: 'w3', name: 'Lateral Lunge (Dumbbell)', sets: 3, repMin: 10, repMax: 10, increment: 1, video: 'R8jArZG2J6Q' },
-    ],
+  "Upper A": [
+    {
+      "id": "u1",
+      "name": "Flat Dumbbell Bench Press",
+      "sets": 3,
+      "repMin": 10,
+      "repMax": 10,
+        "video": "5Y3VZsLb1Ys",
+      "muscles": "Chest \u00b7 triceps \u00b7 front delts",
+      "equipment": "Dumbbells + flat bench",
+      "cue": "Keep feet planted and shoulder blades supported; lower with control. Log weight per dumbbell.",
+      "rest": "2\u20133 min",
+      "perSide": false,
+      "setup": null
+    },
+    {
+      "id": "hd3200-lat",
+      "name": "Lat Pulldown",
+      "sets": 3,
+      "repMin": 10,
+      "repMax": 10,
+        "video": "7D2t1XnrW2s",
+      "muscles": "Lats \u00b7 upper back \u00b7 biceps",
+      "equipment": "HOIST HD-3200",
+      "cue": "Pull toward upper chest; keep torso steady and return slowly.",
+      "rest": "2\u20133 min",
+      "perSide": false,
+      "setup": "https://www.hoistfitness.com/pages/hd-3200-lat-pulldown-mid-row"
+    },
+    {
+      "id": "hd3000-lateral",
+      "name": "Standing Cable Lateral Raise",
+      "sets": 3,
+      "repMin": 10,
+      "repMax": 10,
+        "video": "JlT2xB92lY8",
+      "muscles": "Side delts",
+      "equipment": "HOIST HD-3000",
+      "cue": "Use a light load; raise to about shoulder height without shrugging or swinging. Log each side at the same weight.",
+      "rest": "90\u2013120 sec",
+      "perSide": true,
+      "setup": null
+    }
+  ],
+  "Lower A": [
+    {
+      "id": "hd3403-press",
+      "name": "Leg Press",
+      "sets": 3,
+      "repMin": 10,
+      "repMax": 10,
+        "video": "obqVU1u3Bfk",
+      "muscles": "Quads \u00b7 glutes \u00b7 adductors",
+      "equipment": "HOIST HD-3403",
+      "cue": "Keep pelvis and back supported; stop the descent before your pelvis rolls off the pad. Do not force depth.",
+      "rest": "2\u20133 min",
+      "perSide": false,
+      "setup": "https://www.hoistfitness.com/pages/hd-3403-leg-press-calf-raise"
+    },
+    {
+      "id": "l2",
+      "name": "Dumbbell Romanian Deadlift / Hip Hinge",
+      "sets": 3,
+      "repMin": 10,
+      "repMax": 10,
+        "video": "hQgFixeXdZo",
+      "muscles": "Hamstrings \u00b7 glutes \u00b7 spinal erectors (stabilize)",
+      "equipment": "Dumbbells \u00b7 physio exercise",
+      "cue": "Use your physio-taught hinge: soft knees, hips back, weights close. Stop at your controlled range; do not chase the floor. Log weight per dumbbell.",
+      "rest": "2\u20133 min",
+      "perSide": false,
+      "setup": null
+    },
+    {
+      "id": "l3",
+      "name": "Dumbbell Reverse Lunge",
+      "sets": 3,
+      "repMin": 10,
+      "repMax": 10,
+        "video": "Q2k3kYbtOcI",
+      "muscles": "Quads \u00b7 glutes \u00b7 adductors",
+      "equipment": "Dumbbells \u00b7 physio exercise",
+      "cue": "Step backward, lower under control, then drive through the front foot. Follow your physio\u2019s version. Log weight per dumbbell.",
+      "rest": "2\u20133 min after both sides",
+      "perSide": true,
+      "setup": null
+    }
+  ],
+  "Upper B": [
+    {
+      "id": "hd3300-chest",
+      "name": "Machine Chest Press",
+      "sets": 3,
+      "repMin": 10,
+      "repMax": 10,
+        "video": "n8TOta_pfr4",
+      "muscles": "Chest \u00b7 triceps \u00b7 front delts",
+      "equipment": "HOIST HD-3300 \u00b7 chest mode",
+      "cue": "Choose chest-press mode, with handles at chest level. Keep back supported and avoid shrugging. No seated overhead press.",
+      "rest": "2\u20133 min",
+      "perSide": false,
+      "setup": "https://www.hoistfitness.com/pages/hd-3300-chest-press-shoulder-press"
+    },
+    {
+      "id": "hd3200-row",
+      "name": "Mid Row",
+      "sets": 3,
+      "repMin": 10,
+      "repMax": 10,
+        "video": "vwHG9Jfu4sw",
+      "muscles": "Lats \u00b7 rhomboids \u00b7 traps \u00b7 rear delts \u00b7 biceps",
+      "equipment": "HOIST HD-3200",
+      "cue": "Pull toward your lower ribs; keep torso steady and control the return. Use the HOIST setup link for this model.",
+      "rest": "2\u20133 min",
+      "perSide": false,
+      "setup": "https://www.hoistfitness.com/pages/hd-3200-lat-pulldown-mid-row"
+    },
+    {
+      "id": "hd3000-triceps",
+      "name": "Standing Rope Triceps Pushdown",
+      "sets": 3,
+      "repMin": 10,
+      "repMax": 10,
+        "video": "n2FSCB4vRSA",
+      "muscles": "Triceps",
+      "equipment": "HOIST HD-3000",
+      "cue": "Keep elbows near your sides; extend without leaning your body into the rope.",
+      "rest": "90\u2013120 sec",
+      "perSide": false,
+      "setup": null
+    }
+  ],
+  "Lower B": [
+    {
+      "id": "ball-lateral",
+      "name": "Weighted-Ball Lateral Lunge",
+      "sets": 3,
+      "repMin": 10,
+      "repMax": 10,
+        "video": "nAu31jw1B6U",
+      "muscles": "Quads \u00b7 glutes \u00b7 adductors",
+      "equipment": "Weighted ball \u00b7 physio exercise",
+      "cue": "Hold the ball as your physio taught. Step sideways, sit hips back into the stepping leg, then push back to standing. Log total ball weight.",
+      "rest": "2\u20133 min after both sides",
+      "perSide": true,
+      "setup": null
+    },
+    {
+      "id": "hd3400-curl",
+      "name": "Seated Leg Curl",
+      "sets": 3,
+      "repMin": 10,
+      "repMax": 10,
+        "video": "EqCsK_vlnfE",
+      "muscles": "Hamstrings",
+      "equipment": "HOIST HD-3400",
+      "cue": "Align knees with the pivot; secure thigh pad and curl without lifting your hips. Stand between sets.",
+      "rest": "2\u20133 min",
+      "perSide": false,
+      "setup": "https://www.hoistfitness.com/pages/hd-3400-leg-extension-leg-curl"
+    },
+    {
+      "id": "hd3403-calf",
+      "name": "Leg Press Calf Raise",
+      "sets": 3,
+      "repMin": 10,
+      "repMax": 10,
+        "video": "dhRz1Ns60Zg",
+      "muscles": "Calves (gastrocnemius \u00b7 soleus)",
+      "equipment": "HOIST HD-3403",
+      "cue": "Place balls of feet securely on the platform. Keep knees softly extended, move through the ankles and avoid bouncing.",
+      "rest": "90\u2013120 sec",
+      "perSide": false,
+      "setup": "https://www.hoistfitness.com/pages/hd-3403-leg-press-calf-raise"
+    }
+  ],
+  "Accessories": [
+    {
+      "id": "hoist-curl",
+      "name": "Preacher Curl Machine",
+      "sets": 3,
+      "repMin": 10,
+      "repMax": 10,
+        "video": "dnJ1vNlhzHY",
+      "muscles": "Biceps \u00b7 brachialis",
+      "equipment": "Pictured HOIST curl machine \u00b7 model unconfirmed",
+      "cue": "Adjust seat so upper arms rest on the pad; curl without rocking and lower slowly. Stand between sets.",
+      "rest": "90\u2013120 sec",
+      "perSide": false,
+      "setup": null
+    },
+    {
+      "id": "hd3000-face",
+      "name": "Standing Cable Face Pull",
+      "sets": 3,
+      "repMin": 10,
+      "repMax": 10,
+        "video": "eTCBSFlCJ_s",
+      "muscles": "Rear delts \u00b7 upper back \u00b7 external rotators",
+      "equipment": "HOIST HD-3000",
+      "cue": "Use a light rope load; pull toward face with a stable torso and controlled return.",
+      "rest": "90\u2013120 sec",
+      "perSide": false,
+      "setup": null
+    },
+    {
+      "id": "hd3400-extension",
+      "name": "Leg Extension",
+      "sets": 3,
+      "repMin": 10,
+      "repMax": 10,
+        "video": "xd9m2S_Rw4s",
+      "muscles": "Quads",
+      "equipment": "HOIST HD-3400",
+      "cue": "Align knees with pivot and place roller just above ankles. Extend and lower under control; stand between sets.",
+      "rest": "90\u2013120 sec",
+      "perSide": false,
+      "setup": "https://www.hoistfitness.com/pages/hd-3400-leg-extension-leg-curl"
+    }
+  ]
+};
+  const DAY_ORDER = Object.keys(PROGRAM);
+  const DAY_MUSCLES = {
+    "Upper A": ["Chest", "Back", "Side delts"], "Lower A": ["Quads", "Hamstrings", "Glutes"],
+    "Upper B": ["Chest", "Back", "Triceps"], "Lower B": ["Quads", "Glutes", "Hamstrings", "Calves"],
+    "Accessories": ["Biceps", "Rear delts", "Quads"]
   };
-  const DAY_ORDER = ['Upper A', 'Lower A', 'Upper B', 'Lower B'];
+  const esc = value => String(value ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;", "'":"&#39;"}[c]));
 
+  let calendarMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
   let history = { sessions: [] };
   let profile = { weightKg: 64, heightIn: "5'10\"", goal: 'Build muscle', experience: 'Some experience (6mo-2yr)', equipmentNotes: '' };
   let activeDay = DAY_ORDER[0];
   let draft = {}; // exId -> [{weight, reps}, ...]
+  let progressIds = {};
+  let progressUpdatedAt = null;
+  let savingSession = false;
+
+  function saveProgress(exId) {
+    if (PROGRAM[activeDay]?.some(ex => draft[ex.id]?.some(row => row && Object.values(row).some(value => value !== null))) && !progressIds[activeDay]) progressIds[activeDay] = 'progress-' + Date.now() + '-' + Math.random().toString(36).slice(2);
+    try {
+      const updatedAt = new Date().toISOString();
+      localStorage.setItem('workout-progress', JSON.stringify({version:1, draft, progressIds, day:activeDay, updatedAt}));
+      progressUpdatedAt = updatedAt;
+      showProgressStatus(exId, 'Progress saved on this phone · ' + new Date(updatedAt).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}));
+      return true;
+    } catch (error) {
+      showProgressStatus(exId, 'Could not save progress. Keep this page open and try again.');
+      return false;
+    }
+  }
+
+  function showProgressStatus(exId, message) {
+    ROOT.querySelectorAll('[data-progress-status]').forEach(status => {
+      if (!exId || status.dataset.progressStatus === exId) status.textContent = message;
+    });
+  }
+
+  function clearDayProgress(day) {
+    for (const ex of PROGRAM[day] || []) delete draft[ex.id];
+    delete progressIds[day];
+  }
 
   async function loadAll() {
     try {
@@ -292,6 +531,24 @@ window.storage = {
     } catch (e) { /* defaults stand */ }
 
     activeDay = suggestNextDay();
+    try {
+      const saved = JSON.parse(localStorage.getItem('workout-progress'));
+      if (saved && saved.version === 1 && saved.draft && typeof saved.draft === 'object') {
+        for (const exercises of Object.values(PROGRAM)) for (const ex of exercises) {
+          const rows = saved.draft[ex.id];
+          if (Array.isArray(rows)) draft[ex.id] = rows.slice(0, ex.sets).map(row => {
+            if (!row || typeof row !== 'object') return null;
+            const clean = {};
+            for (const field of ['weight', 'reps']) if (Object.prototype.hasOwnProperty.call(row, field)) clean[field] = Number.isFinite(row[field]) && row[field] >= 0 ? row[field] : null;
+            return clean;
+          });
+        }
+        progressIds = saved.progressIds && typeof saved.progressIds === 'object' ? saved.progressIds : {};
+        for (const day of DAY_ORDER) if (progressIds[day] && history.sessions.some(session => session.progressId === progressIds[day])) clearDayProgress(day);
+        progressUpdatedAt = saved.updatedAt;
+        if (PROGRAM[saved.day] && PROGRAM[saved.day].some(ex => draft[ex.id]?.some(row => row && Object.values(row).some(value => value !== null)))) activeDay = saved.day;
+      }
+    } catch (error) { /* completed history still loads if the draft is unavailable */ }
     render();
   }
 
@@ -323,22 +580,15 @@ window.storage = {
 
   function suggestion(exDef) {
     const last = lastPerformance(exDef.id);
-    if (!last) {
-      return { text: 'Pick a starting weight', trend: 'hold', weight: null };
+    if (!last) return { weight: null };
+    const counts = new Map();
+    for (const set of last.ex.sets) {
+      if (Number.isFinite(set.weight) && set.weight >= 0) counts.set(set.weight, (counts.get(set.weight) || 0) + 1);
     }
-    const sets = last.ex.sets;
-    const allTop = sets.every(s => s.reps >= exDef.repMax);
-    const allMetMin = sets.every(s => s.reps >= exDef.repMin);
-    const lastWeight = Math.max(...sets.map(s => s.weight));
-
-    if (allTop) {
-      return { text: `${(lastWeight + exDef.increment).toFixed(1)} kg`, trend: 'up', weight: lastWeight + exDef.increment, note: 'topped range last time — go up' };
-    } else if (allMetMin) {
-      return { text: `${lastWeight.toFixed(1)} kg`, trend: 'hold', weight: lastWeight, note: 'push for more reps at same weight' };
-    } else {
-      const dropped = Math.max(exDef.increment > 0 ? lastWeight - exDef.increment : lastWeight, 0);
-      return { text: `${dropped.toFixed(1)} kg`, trend: 'down', weight: dropped, note: 'missed reps — hold or ease back' };
-    }
+    let weight = null, highestCount = 0;
+    // Map preserves set order: the first logged weight wins a frequency tie.
+    for (const [value, count] of counts) if (count > highestCount) { weight = value; highestCount = count; }
+    return { weight };
   }
 
   function fmtDate(d) {
@@ -349,9 +599,10 @@ window.storage = {
   function render() {
     ROOT.innerHTML = `
       <div class="head">
-        <div class="eyebrow">4-Day Upper / Lower · Muscle Gain</div>
+        <div class="eyebrow">5-Session Cycle · 3 Exercises · Muscle Gain</div>
         <h1>Today's Session</h1>
-        <div class="sub">${profile.weightKg}kg · ${profile.heightIn} · ${profile.experience}</div>
+        <div class="sub">${esc(profile.weightKg ?? 64)}kg · ${esc(profile.heightIn ?? "5'10\"")} · ${esc(profile.experience ?? "Some experience")}</div>
+        <div class="sub">10-min run · 3 sets × 10 reps · up to 60 min total</div>
       </div>
       <div class="tabs">
         ${DAY_ORDER.map(d => `
@@ -360,53 +611,121 @@ window.storage = {
           </div>
         `).join('')}
         <div class="tab ${activeDay === 'Warm-up' ? 'active' : ''}" data-day="Warm-up">Warm-up</div>
+        <div class="tab ${activeDay === 'Guide' ? 'active' : ''}" data-day="Guide">Guide & backup</div>
       </div>
       <div class="body">
-        ${activeDay === 'Warm-up' ? renderWarmup() : renderDay()}
+        ${activeDay === 'Warm-up' ? renderWarmup() : activeDay === 'Guide' ? renderGuide() : renderDay()}
       </div>
     `;
 
     ROOT.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => {
       activeDay = t.dataset.day;
-      draft = {};
       render();
     }));
-    if (activeDay !== 'Warm-up') {
+    if (PROGRAM[activeDay]) {
       ROOT.querySelectorAll('input[data-ex]').forEach(inp => inp.addEventListener('input', onInputChange));
       document.getElementById('wt-save').addEventListener('click', saveSession);
-      document.getElementById('wt-reset').addEventListener('click', () => { draft = {}; render(); });
+      document.getElementById('wt-reset').addEventListener('click', () => {
+        clearDayProgress(activeDay);
+        const saved = saveProgress(); render();
+        if (!saved) showProgressStatus(null, 'Could not clear saved progress. Keep this page open and try again.');
+      });
+      ROOT.querySelectorAll('[data-save-progress]').forEach(button => button.addEventListener('click', () => saveProgress(button.dataset.saveProgress)));
       const equipEl = document.getElementById('wt-equip');
       equipEl.addEventListener('blur', saveProfile);
+    } else if (activeDay === 'Guide') {
+      document.getElementById('wt-export').addEventListener('click', exportBackup);
+      document.getElementById('wt-import').addEventListener('change', importBackup);
+      ROOT.querySelectorAll('[data-month-step]').forEach(button => button.addEventListener('click', () => {
+        calendarMonth = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + Number(button.dataset.monthStep), 1);
+        render();
+      }));
+      document.getElementById('wt-calendar-today').addEventListener('click', () => {
+        calendarMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1); render();
+      });
     }
   }
 
   function renderWarmup() {
-    return `
-      <div class="warmup-block">
-        <h3>1. Light Cardio</h3>
-        <ul>
-          <li>Bike, incline treadmill walk, or rower — easy pace, just enough to raise heart rate<span class="time-tag">5 min</span></li>
-        </ul>
-      </div>
-      <div class="warmup-block">
-        <h3>2. Dynamic Mobility (back-focused)</h3>
-        <ul>
-          <li>Cat-cow — 8-10 slow reps<span class="time-tag">~1 min</span></li>
-          <li>Bird dog — 6-8 reps per side<span class="time-tag">~1.5 min</span></li>
-          <li>Hip circles or 90/90 hip switches — 5-6 per side<span class="time-tag">~1 min</span></li>
-          <li>Leg swings (front-back and side-side) — 10 per leg<span class="time-tag">~1 min</span></li>
-        </ul>
-      </div>
-      <div class="warmup-block">
-        <h3>3. Ramp-Up Sets</h3>
-        <ul>
-          <li>On your first main lift of the day, before working weight: 1 set at ~50% weight × 8-10 reps</li>
-          <li>Then 1 set at ~75% weight × 4-5 reps</li>
-          <li>Then start your logged working sets<span class="time-tag">~3-4 min</span></li>
-        </ul>
-      </div>
-      <div class="warmup-total">Total: ~10-12 min — still leaves room for a 1-hour session</div>
-    `;
+    return `<div class="warmup-block"><h3>1. Your 10-minute run</h3><p>Run at an easy, conversational pace so you still feel ready to lift.</p></div>
+      <div class="warmup-block"><h3>2. Prepare for the first lift · 3–5 min</h3><p>Do 1–2 lighter practice sets of today’s first exercise: approximately 50% of working weight for 8 reps, then 75% for 4–5 reps if useful. Prepare again with a light set when switching to a new movement. These are not logged working sets.</p></div>
+      <div class="warmup-block"><h3>3. Three exercises · around 25–40 min</h3><p>Do 3 sets of 10 reps for each exercise. Rest 2–3 minutes on compound lifts, 90–120 seconds on isolation exercises, or longer when needed. For single-side exercises, complete 10 on each side before the main rest.</p></div>
+      <div class="warmup-total">Usually around 40–60 minutes including setup. Finish when done; no need to fill the hour.</div>`;
+  }
+
+  function localDateKey(date) {
+    return `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
+  }
+
+  function renderCalendar() {
+    const year = calendarMonth.getFullYear(), month = calendarMonth.getMonth();
+    const days = new Date(year, month + 1, 0).getDate();
+    const offset = (new Date(year, month, 1).getDay() + 6) % 7;
+    const sessionsByDate = new Map();
+    for (const session of history.sessions) {
+      const date = new Date(session.date);
+      if (!Number.isFinite(date.getTime())) continue;
+      const key = localDateKey(date);
+      if (!sessionsByDate.has(key)) sessionsByDate.set(key, []);
+      sessionsByDate.get(key).push(session.day);
+    }
+    const today = localDateKey(new Date());
+    let workoutDays = 0;
+    const cells = Array.from({length: offset}, () => '<div aria-hidden="true"></div>');
+    for (let day = 1; day <= days; day++) {
+      const date = new Date(year, month, day), key = localDateKey(date);
+      const sessions = sessionsByDate.get(key) || [];
+      if (sessions.length) workoutDays++;
+      const label = date.toLocaleDateString(undefined, {year:'numeric', month:'long', day:'numeric'}) + (sessions.length ? ': ' + sessions.join(', ') : ': no workout logged');
+      cells.push(`<div class="calendar-day ${sessions.length ? 'workout' : ''} ${key === today ? 'today' : ''}" role="gridcell" aria-label="${esc(label)}" ${key === today ? 'aria-current="date"' : ''} title="${esc(label)}">${day}</div>`);
+    }
+    return `<div class="warmup-block"><h3>Workout calendar</h3>
+      <div class="calendar-head"><button class="ghost" data-month-step="-1" aria-label="Previous month">←</button><strong aria-live="polite">${esc(calendarMonth.toLocaleDateString(undefined, {month:'long', year:'numeric'}))}</strong><button class="ghost" data-month-step="1" aria-label="Next month">→</button></div>
+      <div class="calendar-grid" role="grid" aria-label="Workout days">${['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(day => `<div class="calendar-weekday" role="columnheader">${day}</div>`).join('')}${cells.join('')}</div>
+      <div class="calendar-legend">Green = workout logged · outline = today<br>${workoutDays} workout ${workoutDays === 1 ? 'day' : 'days'} this month. Dates use your device’s local time.</div>
+      <button class="ghost" id="wt-calendar-today" style="margin-top:12px">Current month</button></div>`;
+  }
+
+  function renderGuide() {
+    return `${renderCalendar()}<div class="warmup-block"><h3>Your repeating cycle</h3><p>Upper A → Lower A → Upper B → Lower B → Accessories → repeat. Choose the dates yourself and insert rest days as needed. These are five sessions, not five consecutive days. The dot marks the next suggested session.</p><p>Each session has exactly 3 exercises × 3 sets × 10 reps. Choose weights that leave about 1–3 clean reps in reserve. Suggested shows the weight used in the most sets during your last logged session of that exercise. Reps do not affect it. If weights tie, the first logged weight wins. It stays blank until you log the exercise. Type your chosen weights into the empty boxes; saved unfinished entries are restored.</p><p>Log kg per dumbbell, total ball weight, or the machine’s selected stack weight. Convert pounds to kg if needed (lb ÷ 2.205). On unilateral moves, log 10 after completing 10 each side. Machine weights are not comparable across different machines.</p></div>
+      <div class="warmup-block"><h3>Comfort and recovery</h3><p>No seated overhead presses. Take standing breaks between seated machine sets. Brief sitting may still irritate symptoms: stop an aggravating movement and use your physio’s guidance to adjust it. Use the physio-taught versions of the hinge and lunges; videos supplement that instruction. If symptoms become worse during or after training, ease back and check with your physio before progressing.</p></div>
+      <div class="warmup-block"><h3>Training sources</h3><p>This is a custom routine adapted to a three-exercise limit, not an unchanged proven program. The foundation is consistent training, progression and balanced movement patterns from <a href="https://thefitness.wiki/muscle-building-101/" target="_blank" rel="noopener">Muscle Building 101</a>, <a href="https://thefitness.wiki/routines/strength-training-muscle-building/" target="_blank" rel="noopener">r/Fitness recommended routines</a> and the <a href="https://www.reddit.com/r/Fitness/comments/ezqa9m/" target="_blank" rel="noopener">r/Fitness instructional video thread</a>. Each card lists target muscles, a YouTube demonstration and, where relevant, official HOIST setup instructions. Most videos demonstrate the movement on a different machine; match your machine using its setup link.</p></div>
+      <div class="warmup-block"><h3>Your phone data</h3><p>History and equipment notes stay in this browser’s local storage, with the original history and profile keys preserved. No account or cloud sync. Keep the same website address and browser to retain access. Clearing website data or moving devices can lose it. Download backups regularly.</p><button class="primary" id="wt-export">Download backup</button><p><label>Restore a backup <input type="file" id="wt-import" accept="application/json,.json"></label></p><div class="toast" id="wt-toast"></div></div>
+      <div class="warmup-block"><h3>All saved sessions</h3>${history.sessions.length ? history.sessions.slice().reverse().map(session => `<details><summary>${esc(fmtDate(session.date))} · ${esc(session.day)}</summary>${session.exercises.map(ex => `<p>${esc(ex.name)}: ${ex.sets.map(set => esc(set.weight) + ' kg × ' + esc(set.reps)).join(', ')}</p>`).join('')}</details>`).join('') : '<p>No sessions logged yet.</p>'}</div>`;
+  }
+
+  function exportBackup() {
+    const blob = new Blob([JSON.stringify({version: 1, history, profile}, null, 2)], {type: 'application/json'});
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a'); link.href = url;
+    link.download = 'moboddy-backup-' + new Date().toISOString().slice(0,10) + '.json';
+    link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  async function importBackup(event) {
+    const file = event.target.files[0]; if (!file) return;
+    try {
+      const data = JSON.parse(await file.text());
+      if (!data.history || !Array.isArray(data.history.sessions) || !data.profile || typeof data.profile !== 'object' || Array.isArray(data.profile)) throw new Error('Invalid backup');
+      for (const session of data.history.sessions) {
+        if (typeof session.day !== 'string' || !Number.isFinite(Date.parse(session.date)) || !Array.isArray(session.exercises)) throw new Error('Invalid session');
+        for (const ex of session.exercises) {
+          if (typeof ex.id !== 'string' || typeof ex.name !== 'string' || !Array.isArray(ex.sets) || !ex.sets.length || ex.sets.some(set => !Number.isFinite(set.weight) || set.weight < 0 || !Number.isInteger(set.reps) || set.reps <= 0)) throw new Error('Invalid exercise');
+        }
+      }
+      if (!confirm('Replace this browser’s history and profile with the backup? Download a current backup first if you want to keep both.')) return;
+      const oldHistory = localStorage.getItem('history'), oldProfile = localStorage.getItem('profile');
+      try {
+        localStorage.setItem('history', JSON.stringify(data.history)); localStorage.setItem('profile', JSON.stringify(data.profile));
+      } catch (error) {
+        if (oldHistory === null) localStorage.removeItem('history'); else localStorage.setItem('history', oldHistory);
+        if (oldProfile === null) localStorage.removeItem('profile'); else localStorage.setItem('profile', oldProfile);
+        throw error;
+      }
+      history = data.history; profile = data.profile; render();
+      document.getElementById('wt-toast').textContent = 'Backup restored.';
+    } catch (error) { document.getElementById('wt-toast').textContent = 'Unable to restore: invalid backup or storage unavailable. Existing data kept.'; }
+    document.getElementById('wt-toast').classList.add('show'); event.target.value = '';
   }
 
   function renderDay() {
@@ -414,11 +733,11 @@ window.storage = {
     const lastSession = history.sessions.length ? history.sessions[history.sessions.length - 1] : null;
     return `
         <div class="setup-note">
-          <strong style="color:var(--text)">Lower back note</strong> — no seated overhead pressing (all swapped to standing). Ease into the reverse lunge, lateral lunge, RDL, and deadlift with lighter weight first and stop any set that aggravates your back. Rest ~60-90s between upper sets and ~90-150s between heavy lower sets to land near an hour per session.
-          <br><br>
-          <strong style="color:var(--text)">Equipment notes</strong> — jot down the machines you've got so exercise picks stay accurate. Saved automatically.
-          <textarea id="wt-equip" placeholder="e.g. cable tower with lat pulldown + row attachment, leg press, no barbell rack...">${profile.equipmentNotes || ''}</textarea>
+          <strong style="color:var(--text)">Today’s plan</strong> — 10-minute easy run, preparation sets, then 3 exercises × 3 sets × 10 reps. Rest as listed on each card. Stand between seated sets; skip any movement that aggravates symptoms. Keep 1–3 clean reps in reserve.
+          <br><br><strong style="color:var(--text)">Equipment notes</strong> — saved automatically when you leave this field.
+          <textarea id="wt-equip" placeholder="e.g. cable tower with lat pulldown + row attachment, leg press, no barbell rack...">${esc(profile.equipmentNotes || '')}</textarea>
         </div>
+        <div class="ex-target" style="margin-bottom:14px;line-height:1.6">Your entries save as you type. Save progress keeps this workout unfinished; Log this session adds it to history and the calendar.</div>
         <div class="day-banner">
           <h2>${activeDay}</h2>
           <div class="last-done">${lastSession ? `Last session: ${lastSession.day} · ${fmtDate(lastSession.date)}` : 'No sessions logged yet'}</div>
@@ -442,18 +761,18 @@ window.storage = {
     let rowsHtml = '';
     for (let i = 0; i < ex.sets; i++) {
       const savedRow = (draft[ex.id] && draft[ex.id][i]) || {};
-      const wVal = savedRow.weight !== undefined ? savedRow.weight : (sug.weight !== null ? sug.weight : '');
-      const rVal = savedRow.reps !== undefined ? savedRow.reps : '';
+      const wVal = savedRow.weight ?? '';
+      const rVal = savedRow.reps ?? '';
       rowsHtml += `
         <div class="set-row">
           <div class="set-idx">${i + 1}</div>
           <div class="input-wrap">
             <span>kg</span>
-            <input type="number" step="0.5" min="0" placeholder="wt" value="${wVal}" data-ex="${ex.id}" data-set="${i}" data-field="weight">
+            <input type="text" inputmode="decimal" placeholder="wt" value="${wVal}" data-ex="${ex.id}" data-set="${i}" data-field="weight">
           </div>
           <div class="input-wrap">
             <span>${unit}</span>
-            <input type="number" step="1" min="0" placeholder="${unit}" value="${rVal}" data-ex="${ex.id}" data-set="${i}" data-field="reps">
+            <input type="text" inputmode="numeric" placeholder="${unit}" value="${rVal}" data-ex="${ex.id}" data-set="${i}" data-field="reps">
           </div>
         </div>`;
     }
@@ -463,19 +782,25 @@ window.storage = {
         <div class="card-top">
           <div>
             <div class="ex-name">${ex.name}</div>
-            <div class="ex-target">${ex.sets} sets × ${ex.repMin === ex.repMax ? ex.repMin : ex.repMin + '–' + ex.repMax} ${unit}</div>
+            <div class="ex-target">${ex.sets} sets × ${ex.repMin === ex.repMax ? ex.repMin : ex.repMin + '–' + ex.repMax} ${unit}${ex.perSide ? " per side" : ""}</div>
+            <div class="ex-target">${ex.equipment}</div>
+            <div class="ex-target">Targets: ${ex.muscles}</div>
             ${ex.video ? `<a class="watch-form" href="https://www.youtube.com/watch?v=${ex.video}" target="_blank" rel="noopener noreferrer">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M8 5v14l11-7L8 5z" fill="currentColor"/></svg>
-              Watch form
+              Watch form on YouTube
             </a>` : ''}
+            ${ex.setup ? `<br><a class="watch-form" href="${ex.setup}" target="_blank" rel="noopener noreferrer">HOIST setup instructions</a>` : ''}
           </div>
           <div class="suggest">
             <div class="label">Suggested</div>
-            <div class="weight-val">${sug.weight !== null ? sug.weight.toFixed(1) + ' kg' : '—'}</div>
-            ${sug.note ? `<div class="trend ${sug.trend}">${sug.note}</div>` : ''}
+            <div class="weight-val">${sug.weight !== null ? sug.weight + ' kg' : '—'}</div>
+            ${sug.weight !== null ? '<div class="ex-target">Most-used weight last time</div>' : ''}
           </div>
         </div>
+        <div class="ex-target" style="line-height:1.6">${ex.cue}<br>Rest: ${ex.rest}</div>
         <div class="sets-grid">${rowsHtml}</div>
+        <button class="ghost" data-save-progress="${ex.id}" style="margin-top:12px">Save progress</button>
+        <div class="ex-target" data-progress-status="${ex.id}" role="status" style="margin-top:6px;line-height:1.5">${draft[ex.id]?.some(row => row && Object.values(row).some(value => value !== null)) ? 'Unfinished entries · finish with Log this session' : 'Entries save automatically on this phone'}</div>
         ${hist.length ? `<div class="hist-strip">${hist.map(h => `<span class="hist-chip">${fmtDate(h.date)}: ${h.ex.sets.map(s => s.weight + '×' + s.reps).join(', ')}</span>`).join('')}</div>` : ''}
       </div>
     `;
@@ -485,10 +810,12 @@ window.storage = {
     const exId = e.target.dataset.ex;
     const setIdx = parseInt(e.target.dataset.set, 10);
     const field = e.target.dataset.field;
-    const val = parseFloat(e.target.value);
+    const raw = e.target.value.trim();
+    const val = raw === '' ? NaN : Number(raw);
     if (!draft[exId]) draft[exId] = [];
     if (!draft[exId][setIdx]) draft[exId][setIdx] = {};
-    draft[exId][setIdx][field] = isNaN(val) ? undefined : val;
+    draft[exId][setIdx][field] = Number.isFinite(val) ? val : null;
+    saveProgress(exId);
   }
 
   async function saveProfile() {
@@ -499,13 +826,15 @@ window.storage = {
   }
 
   async function saveSession() {
+    if (savingSession) return;
+    const completedDay = activeDay;
     const exercises = PROGRAM[activeDay];
     const loggedExercises = [];
 
     exercises.forEach(ex => {
       const rows = draft[ex.id];
       if (!rows) return;
-      const validSets = rows.filter(r => r && r.weight !== undefined && r.reps !== undefined);
+      const validSets = rows.filter(r => r && Number.isFinite(r.weight) && r.weight >= 0 && Number.isInteger(r.reps) && r.reps > 0);
       if (validSets.length) {
         loggedExercises.push({ id: ex.id, name: ex.name, sets: validSets });
       }
@@ -518,20 +847,27 @@ window.storage = {
       return;
     }
 
-    const session = { date: new Date().toISOString(), day: activeDay, exercises: loggedExercises };
-    history.sessions.push(session);
+    savingSession = true;
+    document.getElementById('wt-save').disabled = true;
+    const session = { date: new Date().toISOString(), day: completedDay, exercises: loggedExercises, progressId: progressIds[completedDay] || null };
+    const updatedHistory = { ...history, sessions: [...history.sessions, session] };
 
     try {
-      const result = await window.storage.set('history', JSON.stringify(history), false);
+      const result = await window.storage.set('history', JSON.stringify(updatedHistory), false);
       if (!result) throw new Error('no result');
+      history = updatedHistory;
       toastEl.textContent = `Saved ${activeDay} — ${loggedExercises.length} exercise(s) logged. Nice work.`;
       toastEl.classList.add('show');
-      draft = {};
+      clearDayProgress(completedDay);
+      saveProgress();
       setTimeout(() => { activeDay = suggestNextDay(); render(); }, 900);
     } catch (e) {
       toastEl.textContent = 'Something went wrong saving — try again.';
       toastEl.classList.add('show');
       console.error(e);
+    } finally {
+      savingSession = false;
+      const button = document.getElementById('wt-save'); if (button) button.disabled = false;
     }
   }
 
