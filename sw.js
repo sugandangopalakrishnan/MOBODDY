@@ -1,4 +1,4 @@
-const CACHE_NAME = 'workout-tracker-v5';
+const CACHE_NAME = 'workout-tracker-v7';
 const ASSETS = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png', './apple-touch-icon.png'];
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS)).then(() => self.skipWaiting()));
