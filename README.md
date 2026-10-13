@@ -59,3 +59,7 @@ Deploy index.html and sw.js together. README.md is updated documentation; manife
 ### Readable progress export
 
 Guide & backup → **Download progress report for AI** exports a Markdown file with the routine, completed sessions and every set in lbs, first/latest exercise comparisons, training context, and a review prompt. Upload it to your preferred LLM for feedback. Review the included tailbone context before sharing. Unfinished drafts are excluded. JSON backups remain the restore format.
+
+### Leg press tutorial correction
+
+Lower A now names the Seated Horizontal Leg Press and links to HOIST Fitness’s official HD-3403 Leg Press/Calf Raise demonstration: https://www.youtube.com/watch?v=wwuLYpEl9q8 . The exercise ID is unchanged so existing logs and suggestions remain associated with it.
